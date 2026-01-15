@@ -8,33 +8,46 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #121212; color: #e0e0e0; }
-        .card { background-color: #1e1e1e; border: 1px solid #333; }
-        .table { color: #e0e0e0; }
-        .table-hover tbody tr:hover { color: #fff; background-color: #2c2c2c; }
-        .modal-content { background-color: #1e1e1e; border: 1px solid #444; }
-        .form-control, .form-select { background-color: #2c2c2c; border: 1px solid #444; color: #fff; }
-        .form-control:focus, .form-select:focus { background-color: #2c2c2c; color: #fff; border-color: #0d6efd; }
-        /* Badge Customizado */
+        /* MODO CLARO - Estilos Ajustados */
+        body { 
+            background-color: #f8f9fa; /* Fundo cinza bem claro */
+            color: #212529; /* Texto escuro padrão */
+        }
+        .card { 
+            background-color: #ffffff; 
+            border: none; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Sombra suave */
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        /* Ajuste visual para os badges */
         .badge-status { font-size: 0.9em; padding: 0.5em 0.8em; }
+        
+        /* Ajuste do cabeçalho da tabela */
+        .table thead th {
+            background-color: #e9ecef;
+            color: #495057;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark border-bottom border-secondary mb-4">
+    <nav class="navbar navbar-light mb-4">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand d-flex align-items-center" href="#">
                 <img src="https://cdn-icons-png.flaticon.com/512/1256/1256650.png" width="30" height="30" class="d-inline-block align-top me-2">
-                Gerenciador Modo IA
+                <span class="fw-bold text-primary">Gerenciador Modo IA</span>
             </a>
             <a href="/logout" class="btn btn-outline-danger btn-sm">Sair</a>
         </div>
     </nav>
 
     <div class="container">
-        <div class="card p-4">
+        <div class="card p-4 rounded-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4>Lista de Clientes</h4>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalRegistro" onclick="limparForm()">
+                <h4 class="mb-0 text-secondary">Lista de Clientes</h4>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRegistro" onclick="limparForm()">
                     <i class="bi bi-plus-lg"></i> Novo Registro
                 </button>
             </div>
@@ -61,20 +74,21 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Gerenciar Cliente</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="registroId">
                     <div class="mb-3">
-                        <label>Nome</label>
+                        <label class="form-label">Nome</label>
                         <input type="text" class="form-control" id="nome">
                     </div>
                     <div class="mb-3">
-                        <label>Telefone</label>
-                        <input type="text" class="form-control" id="telefone">
+                        <label class="form-label">Telefone</label>
+                        <input type="number" class="form-control" id="telefone" placeholder="Ex: 5551999104341">
+                        <div class="form-text">Formato: País + DDD + Número (sem espaços).</div>
                     </div>
                     <div class="mb-3">
-                        <label>Modo IA</label>
+                        <label class="form-label">Modo IA</label>
                         <select class="form-select" id="modo_ia">
                             <option value="Ativado">Ativado (ON)</option>
                             <option value="Desativado">Desativado (OFF)</option>
@@ -91,47 +105,43 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Injetando a chave API via Backend para uso no Frontend
         const API_KEY = "{{ config['API_KEY'] }}";
-
-        const headers = {
-            'Content-Type': 'application/json',
-            'x-api-key': API_KEY
-        };
+        const headers = { 'Content-Type': 'application/json', 'x-api-key': API_KEY };
 
         async function carregarDados() {
-            const res = await fetch('/api/registros', { headers: headers });
-            const dados = await res.json();
-            const tbody = document.getElementById('tabela-corpo');
-            tbody.innerHTML = '';
-            
-            dados.forEach(d => {
-                // Lógica Simplificada: Se for 'Ativado' é verde, senão é vermelho/cinza.
-                let badgeClass = 'bg-danger'; // Padrão Desativado (Vermelho)
-                let icon = '<i class="bi bi-x-circle"></i>';
-                
-                if (d.modo_ia === 'Ativado') {
-                    badgeClass = 'bg-success'; // Ativado (Verde)
-                    icon = '<i class="bi bi-check-circle"></i>';
-                }
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${d.id}</td>
-                        <td>${d.nome}</td>
-                        <td>${d.telefone}</td>
-                        <td><span class="badge badge-status ${badgeClass}">${icon} ${d.modo_ia}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-info me-2" onclick="editar(${d.id}, '${d.nome}', '${d.telefone}', '${d.modo_ia}')">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deletar(${d.id})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
+            try {
+                const res = await fetch('/api/registros', { headers: headers });
+                if (!res.ok) throw new Error('Erro ao buscar dados');
+                const dados = await res.json();
+
+                const tbody = document.getElementById('tabela-corpo');
+                tbody.innerHTML = '';
+
+                dados.forEach(d => {
+                    let badgeClass = d.modo_ia === 'Ativado' ? 'bg-success' : 'bg-danger';
+                    let icon = d.modo_ia === 'Ativado' ? '<i class="bi bi-check-circle"></i>' : '<i class="bi bi-x-circle"></i>';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${d.id}</td>
+                            <td>${d.nome}</td>
+                            <td>${d.telefone}</td>
+                            <td><span class="badge badge-status ${badgeClass}">${icon} ${d.modo_ia}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="editar(${d.id}, '${d.nome}', '${d.telefone}', '${d.modo_ia}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deletar(${d.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error(error);
+                document.getElementById('tabela-corpo').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro ao carregar dados. Verifique a API.</td></tr>';
+            }
         }
 
         async function salvarRegistro() {
@@ -145,11 +155,7 @@
             const url = id ? `/api/registro/${id}` : '/api/registro';
             const method = id ? 'PUT' : 'POST';
 
-            await fetch(url, {
-                method: method,
-                headers: headers,
-                body: JSON.stringify(dados)
-            });
+            await fetch(url, { method: method, headers: headers, body: JSON.stringify(dados) });
 
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistro'));
             modal.hide();
@@ -168,7 +174,6 @@
             document.getElementById('nome').value = nome;
             document.getElementById('telefone').value = tel;
             document.getElementById('modo_ia').value = modo;
-            
             new bootstrap.Modal(document.getElementById('modalRegistro')).show();
         }
 
