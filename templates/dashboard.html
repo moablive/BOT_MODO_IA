@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Modo IA</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1256/1256650.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: #e0e0e0; }
+        .card { background-color: #1e1e1e; border: 1px solid #333; }
+        .table { color: #e0e0e0; }
+        .table-hover tbody tr:hover { color: #fff; background-color: #2c2c2c; }
+        .modal-content { background-color: #1e1e1e; border: 1px solid #444; }
+        .form-control, .form-select { background-color: #2c2c2c; border: 1px solid #444; color: #fff; }
+        .form-control:focus, .form-select:focus { background-color: #2c2c2c; color: #fff; border-color: #0d6efd; }
+        /* Badge Customizado */
+        .badge-status { font-size: 0.9em; padding: 0.5em 0.8em; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark border-bottom border-secondary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="https://cdn-icons-png.flaticon.com/512/1256/1256650.png" width="30" height="30" class="d-inline-block align-top me-2">
+                Gerenciador Modo IA
+            </a>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">Sair</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Lista de Clientes</h4>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalRegistro" onclick="limparForm()">
+                    <i class="bi bi-plus-lg"></i> Novo Registro
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Telefone</th>
+                            <th>Status IA</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRegistro" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Gerenciar Cliente</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="registroId">
+                    <div class="mb-3">
+                        <label>Nome</label>
+                        <input type="text" class="form-control" id="nome">
+                    </div>
+                    <div class="mb-3">
+                        <label>Telefone</label>
+                        <input type="text" class="form-control" id="telefone">
+                    </div>
+                    <div class="mb-3">
+                        <label>Modo IA</label>
+                        <select class="form-select" id="modo_ia">
+                            <option value="Ativado">Ativado (ON)</option>
+                            <option value="Desativado">Desativado (OFF)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarRegistro()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Injetando a chave API via Backend para uso no Frontend
+        const API_KEY = "{{ config['API_KEY'] }}";
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-api-key': API_KEY
+        };
+
+        async function carregarDados() {
+            const res = await fetch('/api/registros', { headers: headers });
+            const dados = await res.json();
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '';
+            
+            dados.forEach(d => {
+                // Lógica Simplificada: Se for 'Ativado' é verde, senão é vermelho/cinza.
+                let badgeClass = 'bg-danger'; // Padrão Desativado (Vermelho)
+                let icon = '<i class="bi bi-x-circle"></i>';
+                
+                if (d.modo_ia === 'Ativado') {
+                    badgeClass = 'bg-success'; // Ativado (Verde)
+                    icon = '<i class="bi bi-check-circle"></i>';
+                }
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${d.id}</td>
+                        <td>${d.nome}</td>
+                        <td>${d.telefone}</td>
+                        <td><span class="badge badge-status ${badgeClass}">${icon} ${d.modo_ia}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info me-2" onclick="editar(${d.id}, '${d.nome}', '${d.telefone}', '${d.modo_ia}')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deletar(${d.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function salvarRegistro() {
+            const id = document.getElementById('registroId').value;
+            const dados = {
+                nome: document.getElementById('nome').value,
+                telefone: document.getElementById('telefone').value,
+                modo_ia: document.getElementById('modo_ia').value
+            };
+
+            const url = id ? `/api/registro/${id}` : '/api/registro';
+            const method = id ? 'PUT' : 'POST';
+
+            await fetch(url, {
+                method: method,
+                headers: headers,
+                body: JSON.stringify(dados)
+            });
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistro'));
+            modal.hide();
+            carregarDados();
+        }
+
+        async function deletar(id) {
+            if(confirm('Tem certeza?')) {
+                await fetch(`/api/registro/${id}`, { method: 'DELETE', headers: headers });
+                carregarDados();
+            }
+        }
+
+        function editar(id, nome, tel, modo) {
+            document.getElementById('registroId').value = id;
+            document.getElementById('nome').value = nome;
+            document.getElementById('telefone').value = tel;
+            document.getElementById('modo_ia').value = modo;
+            
+            new bootstrap.Modal(document.getElementById('modalRegistro')).show();
+        }
+
+        function limparForm() {
+            document.getElementById('registroId').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('telefone').value = '';
+            document.getElementById('modo_ia').value = 'Ativado';
+        }
+
+        carregarDados();
+    </script>
+</body>
+</html>
