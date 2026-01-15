@@ -1,0 +1,25 @@
+# --- Segurança (CRÍTICO) ---
+.env
+.env.local
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.pytest_cache/
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- IDEs e OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
